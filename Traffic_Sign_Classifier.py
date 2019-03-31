@@ -160,23 +160,22 @@ from sklearn.utils import shuffle
 EPOCHS = 10
 BATCH_SIZE = 128
 with tf.Session() as sess:
-    with tf.device("/device:GPU:0"): #"/cpu:0" or "/gpu:0"
-        sess.run(tf.global_variables_initializer())
-        num_examples = len(X_train)
-        print("Num examples: ", num_examples)
-        print("Training...")
-        print()
-        for i in range(EPOCHS):
-            X_train, y_train = shuffle(X_train, y_train)
-            for offset in range(0, num_examples, BATCH_SIZE):
-                end = offset + BATCH_SIZE
-                batch_x, batch_y = X_train[offset:end], y_train[offset:end]
-                sess.run(training_operation, feed_dict={x: batch_x, y: batch_y})
+    sess.run(tf.global_variables_initializer())
+    num_examples = len(X_train)
+    print("Num examples: ", num_examples)
+    print("Training...")
+    print()
+    for i in range(EPOCHS):
+        X_train, y_train = shuffle(X_train, y_train)
+        for offset in range(0, num_examples, BATCH_SIZE):
+            end = offset + BATCH_SIZE
+            batch_x, batch_y = X_train[offset:end], y_train[offset:end]
+            sess.run(training_operation, feed_dict={x: batch_x, y: batch_y})
 
-            validation_accuracy = evaluate(X_valid, y_valid)
-            print("EPOCH {} ...".format(i + 1))
-            print("Validation Accuracy = {:.3f}".format(validation_accuracy))
-            print()
+        validation_accuracy = evaluate(X_valid, y_valid)
+        print("EPOCH {} ...".format(i + 1))
+        print("Validation Accuracy = {:.3f}".format(validation_accuracy))
+        print()
 
     saver.save(sess, './lenet')
     print("Model saved")
