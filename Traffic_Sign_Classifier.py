@@ -51,11 +51,11 @@ signs_dict = dict((rows[0], rows[1]) for rows in reader)
 
 import matplotlib.pyplot as plt
 # Visualizations will be shown in the notebook.
-n = 19000
-plt.imshow(X_train[n])
-plt.axis('off')
-plt.title(signs_dict[str(y_train[n])])
-plt.show()
+# n = 19000
+# plt.imshow(X_train[n])
+# plt.axis('off')
+# plt.title(signs_dict[str(y_train[n])])
+# plt.show()
 
 ### Step 2: Design and Test a Model Architecture
 ### Preprocess the data here. It is required to normalize the data. Other preprocessing steps could include
@@ -130,7 +130,7 @@ y = tf.placeholder(tf.int32, (None))
 one_hot_y = tf.one_hot(y, 43)
 
 ### training pipeline
-rate = 0.001
+rate = 1e-4
 
 logits = LeNet(x)
 cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=one_hot_y, logits=logits)
@@ -159,24 +159,48 @@ def evaluate(X_data, y_data):
 from sklearn.utils import shuffle
 EPOCHS = 10
 BATCH_SIZE = 128
+iterations = 0
+loss_series = []
+train_acc_series = []
+val_acc_series = []
+val_acc_x = []
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     num_examples = len(X_train)
     print("Num examples: ", num_examples)
     print("Training...")
     print()
+    validation_accuracy = evaluate(X_valid, y_valid)
+    val_acc_series.append(validation_accuracy)
+    val_acc_x.append(iterations)
     for i in range(EPOCHS):
         X_train, y_train = shuffle(X_train, y_train)
         for offset in range(0, num_examples, BATCH_SIZE):
             end = offset + BATCH_SIZE
             batch_x, batch_y = X_train[offset:end], y_train[offset:end]
-            sess.run(training_operation, feed_dict={x: batch_x, y: batch_y})
+            loss, _ = sess.run([loss_operation, training_operation], feed_dict={x: batch_x, y: batch_y})
+            loss_series.append(loss)
+            train_accuracy = evaluate(batch_x, batch_y)
+            train_acc_series.append(train_accuracy)
+            iterations += 1
 
         validation_accuracy = evaluate(X_valid, y_valid)
-        print("EPOCH {} ...".format(i + 1))
+        val_acc_series.append(validation_accuracy)
+        val_acc_x.append(iterations)
+        print("EPOCH {} ({} iterations)...".format(i + 1, iterations))
+        print("Loss = {}".format(loss))
+        print("Training Accuracy = {:.3f}".format(train_accuracy))
         print("Validation Accuracy = {:.3f}".format(validation_accuracy))
         print()
 
-    saver.save(sess, './lenet')
-    print("Model saved")
+    # saver.save(sess, './lenet')
+    # print("Model saved")
 
+f, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 7))
+ax1.plot(loss_series)
+ax1.set_title("Loss")
+ax2.plot(train_acc_series, label="Training")
+ax2.plot(val_acc_x, val_acc_series, marker='o', label="Validation")
+ax2.legend(loc='lower right')
+ax2.set_title("Accuracy")
+plt.show()
