@@ -15,4 +15,4 @@ RUN apt-get -y install python3-tk
 ENV DISPLAY unix:0
 
 # Run app.py when the container launches
-CMD ["python3", "/app/Traffic_Sign_Classifier.py"]
+CMD ["python3", "/app/mnist_Classifier.py"]
