@@ -67,7 +67,6 @@ plt.show()
 import tensorflow as tf
 from tensorflow.contrib.layers import flatten
 
-
 def LeNet(x):
     # Arguments used for tf.truncated_normal, randomly defines variables for the weights and biases for each layer
     mu = 0
@@ -88,35 +87,35 @@ def LeNet(x):
     out_weights = tf.Variable(tf.truncated_normal((84, 43)))
     out_bias = tf.Variable(tf.zeros(43))
 
-    # TODO: Layer 1: Convolutional. Input = 32x32x1. Output = 28x28x6.
+    # Layer 1: Convolutional. Input = 32x32x1. Output = 28x28x6.
     conv1_layer = tf.nn.conv2d(x, conv1_weights, conv1_strides, 'VALID')
     conv1_layer = tf.nn.bias_add(conv1_layer, conv1_bias)
-    # TODO: Activation.
+    # Activation.
     conv1_layer = tf.nn.relu(conv1_layer)
     #     print(conv1_layer.shape)
-    # TODO: Pooling. Input = 28x28x6. Output = 14x14x6.
+    # Pooling. Input = 28x28x6. Output = 14x14x6.
     pool1_layer = tf.nn.max_pool(conv1_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
-    # TODO: Layer 2: Convolutional. Output = 10x10x16.
+    # Layer 2: Convolutional. Output = 10x10x16.
     conv2_layer = tf.nn.conv2d(pool1_layer, conv2_weights, conv2_strides, 'VALID')
     conv2_layer = tf.nn.bias_add(conv2_layer, conv2_bias)
-    # TODO: Activation.
+    # Activation.
     conv2_layer = tf.nn.relu(conv2_layer)
     #     print(conv2_layer.shape)
-    # TODO: Pooling. Input = 10x10x16. Output = 5x5x16.
+    # Pooling. Input = 10x10x16. Output = 5x5x16.
     pool2_layer = tf.nn.max_pool(conv2_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
     #     print(pool2_layer.shape)
-    # TODO: Flatten. Input = 5x5x16. Output = 400.
+    # Flatten. Input = 5x5x16. Output = 400.
     flat = flatten(pool2_layer)
     #     print(flat.shape)
-    # TODO: Layer 3: Fully Connected. Input = 400. Output = 120.
+    # Layer 3: Fully Connected. Input = 400. Output = 120.
     fc1_layer = tf.add(tf.matmul(flat, fc1_weights), fc1_bias)
-    # TODO: Activation.
+    # Activation.
     fc1_layer = tf.nn.relu(fc1_layer)
-    # TODO: Layer 4: Fully Connected. Input = 120. Output = 84.
+    # Layer 4: Fully Connected. Input = 120. Output = 84.
     fc2_layer = tf.add(tf.matmul(fc1_layer, fc2_weights), fc2_bias)
-    # TODO: Activation.
+    # Activation.
     fc2_layer = tf.nn.relu(fc2_layer)
-    # TODO: Layer 5: Fully Connected. Input = 84. Output = 10.
+    # Layer 5: Fully Connected. Input = 84. Output = 10.
     logits = tf.add(tf.matmul(fc2_layer, out_weights), out_bias)
     return logits
 
@@ -157,16 +156,17 @@ def evaluate(X_data, y_data):
 
 
 ### Train the model
+from sklearn.utils import shuffle
 EPOCHS = 10
 BATCH_SIZE = 128
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     num_examples = len(X_train)
-
+    print("Num examples: ", num_examples)
     print("Training...")
     print()
     for i in range(EPOCHS):
-        # X_train, y_train = shuffle(X_train, y_train)
+        X_train, y_train = shuffle(X_train, y_train)
         for offset in range(0, num_examples, BATCH_SIZE):
             end = offset + BATCH_SIZE
             batch_x, batch_y = X_train[offset:end], y_train[offset:end]
