@@ -1,6 +1,7 @@
 ### Step 0: Load The Data
 # Load pickled data
 import pickle
+import numpy as np
 
 # TODO: Fill this in based on where you saved the training and testing data
 
@@ -19,13 +20,23 @@ X_train, y_train = train['features'], train['labels']
 X_valid, y_valid = valid['features'], valid['labels']
 X_test, y_test = test['features'], test['labels']
 
+# preprocess to gray
+def rgb2gray(x):
+    gray = np.average(x, axis=3)
+    gray = np.expand_dims(gray, axis=3)
+    gray = gray.astype('float32')
+    gray = (gray - 128.) / 128.
+    return gray
+X_train = rgb2gray(X_train)
+X_valid = rgb2gray(X_valid)
+X_test = rgb2gray(X_test)
+
 ### Step 1: Dataset Summary & Exploration
 ### Replace each question mark with the appropriate value.
 ### Use python, pandas or numpy methods rather than hard coding the results
-import numpy as np
 
 # Number of training examples
-n_train = y_train.shape[0]
+n_train = X_train.shape[0]
 # Number of validation examples
 n_validation = X_valid.shape[0]
 # Number of testing examples.
@@ -40,7 +51,7 @@ print("Number of validation examples =", n_validation)
 print("Number of testing examples =", n_test)
 print("Image data shape =", image_shape)
 print("Number of classes =", n_classes)
-
+print("Labels: ", y_train.shape, y_train[0])
 ### Data exploration visualization code goes here.
 ### Feel free to use as many code cells as needed.
 
@@ -52,7 +63,7 @@ signs_dict = dict((rows[0], rows[1]) for rows in reader)
 import matplotlib.pyplot as plt
 # Visualizations will be shown in the notebook.
 # n = 19000
-# plt.imshow(X_train[n])
+# plt.imshow(np.squeeze(X_train[n]))
 # plt.axis('off')
 # plt.title(signs_dict[str(y_train[n])])
 # plt.show()
@@ -62,10 +73,10 @@ import matplotlib.pyplot as plt
 ### converting to grayscale, etc.
 ### Feel free to use as many code cells as needed.
 # Normalize the data: subtract the mean image
-mean_image = np.mean(X_train, axis=0, dtype='uint8')
-X_train -= mean_image
-X_valid -= mean_image
-X_test -= mean_image
+# mean_image = np.mean(X_train, axis=0, dtype='uint8')
+# X_train -= mean_image
+# X_valid -= mean_image
+# X_test -= mean_image
 
 ### Define your architecture here.
 ### Feel free to use as many code cells as needed.
@@ -75,7 +86,7 @@ from tensorflow.contrib.layers import flatten
 
 def LeNet(x):
     # Layer 1: Convolutional. Input = 32x32x1. Output = 28x28x6.
-    conv1_weights = tf.Variable(tf.truncated_normal((5, 5, 3, 6), mean=0, stddev=0.1))
+    conv1_weights = tf.Variable(tf.truncated_normal((5, 5, 1, 6), mean=0, stddev=0.1))
     conv1_strides = [1, 1, 1, 1]
     conv1_bias = tf.Variable(tf.zeros(6))
     conv1_layer = tf.nn.conv2d(x, conv1_weights, conv1_strides, 'VALID') + conv1_bias
@@ -106,7 +117,7 @@ def LeNet(x):
     fc2_layer = tf.add(tf.matmul(fc1_layer, fc2_weights), fc2_bias)
         # Activation.
     fc2_layer = tf.nn.relu(fc2_layer)
-    # Layer 5: Fully Connected. Input = 84. Output = 10.
+    # Layer 5: Fully Connected. Input = 84. Output = 10
     out_weights = tf.Variable(tf.truncated_normal((84, 43)))
     out_bias = tf.Variable(tf.zeros(43))
     logits = tf.add(tf.matmul(fc2_layer, out_weights), out_bias)
@@ -118,12 +129,12 @@ def LeNet(x):
 ### Once a final model architecture is selected,
 ### the accuracy on the test set should be calculated and reported as well.
 ### Feel free to use as many code cells as needed.
-x = tf.placeholder(tf.float32, (None, 32, 32, 3))
+x = tf.placeholder(tf.float32, (None, 32, 32, 1))
 y = tf.placeholder(tf.int32, (None))
 one_hot_y = tf.one_hot(y, 43)
 
 ### training pipeline
-rate = 1e-4
+rate = 1e-5
 
 logits = LeNet(x)
 cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=one_hot_y, logits=logits)
@@ -132,9 +143,12 @@ optimizer = tf.train.AdamOptimizer(learning_rate=rate)
 training_operation = optimizer.minimize(loss_operation)
 
 ### Model evaluation
+print(logits.shape)
+pred = tf.argmax(logits, 1)
+label = tf.argmax(one_hot_y, 1)
 correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(one_hot_y, 1))
 accuracy_operation = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-saver = tf.train.Saver()
+# saver = tf.train.Saver()
 
 
 def evaluate(X_data, y_data):
@@ -178,7 +192,19 @@ with tf.Session() as sess:
             loss_series.append(loss)
             iterations += 1
 
-        train_accuracy = evaluate(batch_x, batch_y)
+        # train_accuracy = evaluate(batch_x, batch_y)
+        corr = sess.run(correct_prediction, feed_dict={x: batch_x, y: batch_y})
+        train_accuracy = sess.run(accuracy_operation, feed_dict={x: batch_x, y: batch_y})
+        logit1 = sess.run(logits, feed_dict={x: X_train[0:1], y: y_train[0:1]})
+        one_hot1 = sess.run(one_hot_y, feed_dict={x: X_train[0:1], y: y_train[0:1]})
+        print("Logit1: ", logit1)
+        print("One hot1: ", one_hot1)
+        prediction = sess.run(pred, feed_dict={x: X_train[0:10], y: y_train[0:10]})
+        labels = sess.run(label, feed_dict={x: X_train[0:10], y: y_train[0:10]})
+        print("Pred: ", prediction)
+        print("Label: ", labels)
+
+        train_accuracy = np.sum(corr)/128
         train_acc_series.append(train_accuracy)
         validation_accuracy = evaluate(X_valid, y_valid)
         val_acc_series.append(validation_accuracy)
@@ -188,7 +214,15 @@ with tf.Session() as sess:
         print("Training Accuracy = {:.3f}".format(train_accuracy))
         print("Validation Accuracy = {:.3f}".format(validation_accuracy))
         print()
-
+    # Plot predictions on validation set after training
+    # f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3, 3, figsize=(12, 8))
+    # for ax in (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9):
+    #     n = int(np.random.rand() * 4410)
+    #     prediction = sess.run(pred, feed_dict={x: X_valid[n:n + 1], y: y_valid[n:n + 1]})
+    #     ax.imshow(np.squeeze(X_valid[n]))
+    #     ax.axis('off')
+    #     ax.set_title(signs_dict[str(prediction[0])])
+    # plt.show()
     # saver.save(sess, './lenet')
     # print("Model saved")
 
