@@ -72,55 +72,43 @@ X_test -= mean_image
 import tensorflow as tf
 from tensorflow.contrib.layers import flatten
 
-def LeNet(x):
-    # Arguments used for tf.truncated_normal, randomly defines variables for the weights and biases for each layer
-    mu = 0
-    sigma = 0.1
 
-    conv1_weights = tf.Variable(tf.truncated_normal((5, 5, 3, 6), mean=mu, stddev=sigma))
+def LeNet(x):
+    # Layer 1: Convolutional. Input = 32x32x1. Output = 28x28x6.
+    conv1_weights = tf.Variable(tf.truncated_normal((5, 5, 3, 6), mean=0, stddev=0.1))
     conv1_strides = [1, 1, 1, 1]
     conv1_bias = tf.Variable(tf.zeros(6))
-
-    conv2_weights = tf.Variable(tf.truncated_normal((5, 5, 6, 16), mean=mu, stddev=sigma))
-    conv2_strides = [1, 1, 1, 1]
-    conv2_bias = tf.Variable(tf.zeros(16))
-
-    fc1_weights = tf.Variable(tf.truncated_normal((400, 120)))
-    fc1_bias = tf.Variable(tf.zeros(120))
-    fc2_weights = tf.Variable(tf.truncated_normal((120, 84)))
-    fc2_bias = tf.Variable(tf.zeros(84))
-    out_weights = tf.Variable(tf.truncated_normal((84, 43)))
-    out_bias = tf.Variable(tf.zeros(43))
-
-    # Layer 1: Convolutional. Input = 32x32x1. Output = 28x28x6.
-    conv1_layer = tf.nn.conv2d(x, conv1_weights, conv1_strides, 'VALID')
-    conv1_layer = tf.nn.bias_add(conv1_layer, conv1_bias)
-    # Activation.
+    conv1_layer = tf.nn.conv2d(x, conv1_weights, conv1_strides, 'VALID') + conv1_bias
+        # Activation.
     conv1_layer = tf.nn.relu(conv1_layer)
-    #     print(conv1_layer.shape)
-    # Pooling. Input = 28x28x6. Output = 14x14x6.
+        # Pooling. Input = 28x28x6. Output = 14x14x6.
     pool1_layer = tf.nn.max_pool(conv1_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
     # Layer 2: Convolutional. Output = 10x10x16.
-    conv2_layer = tf.nn.conv2d(pool1_layer, conv2_weights, conv2_strides, 'VALID')
-    conv2_layer = tf.nn.bias_add(conv2_layer, conv2_bias)
-    # Activation.
+    conv2_weights = tf.Variable(tf.truncated_normal((5, 5, 6, 16), mean=0, stddev=0.1))
+    conv2_strides = [1, 1, 1, 1]
+    conv2_bias = tf.Variable(tf.zeros(16))
+    conv2_layer = tf.nn.conv2d(pool1_layer, conv2_weights, conv2_strides, 'VALID') + conv2_bias
+        # Activation.
     conv2_layer = tf.nn.relu(conv2_layer)
-    #     print(conv2_layer.shape)
-    # Pooling. Input = 10x10x16. Output = 5x5x16.
+        # Pooling. Input = 10x10x16. Output = 5x5x16.
     pool2_layer = tf.nn.max_pool(conv2_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
-    #     print(pool2_layer.shape)
     # Flatten. Input = 5x5x16. Output = 400.
     flat = flatten(pool2_layer)
-    #     print(flat.shape)
-    # Layer 3: Fully Connected. Input = 400. Output = 120.
+    # Layer 3: Fully Connected. Input = 400. Output = 120
+    fc1_weights = tf.Variable(tf.truncated_normal((400, 120)))
+    fc1_bias = tf.Variable(tf.zeros(120))
     fc1_layer = tf.add(tf.matmul(flat, fc1_weights), fc1_bias)
-    # Activation.
+        # Activation.
     fc1_layer = tf.nn.relu(fc1_layer)
-    # Layer 4: Fully Connected. Input = 120. Output = 84.
+    # Layer 4: Fully Connected. Input = 120. Output = 84
+    fc2_weights = tf.Variable(tf.truncated_normal((120, 84)))
+    fc2_bias = tf.Variable(tf.zeros(84))
     fc2_layer = tf.add(tf.matmul(fc1_layer, fc2_weights), fc2_bias)
-    # Activation.
+        # Activation.
     fc2_layer = tf.nn.relu(fc2_layer)
     # Layer 5: Fully Connected. Input = 84. Output = 10.
+    out_weights = tf.Variable(tf.truncated_normal((84, 43)))
+    out_bias = tf.Variable(tf.zeros(43))
     logits = tf.add(tf.matmul(fc2_layer, out_weights), out_bias)
     return logits
 
