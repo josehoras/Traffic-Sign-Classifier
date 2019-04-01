@@ -21,13 +21,13 @@ X_valid, y_valid = valid['features'], valid['labels']
 X_test, y_test = test['features'], test['labels']
 
 # preprocess to gray
-# def prepro(x):
-#     x = x.astype('float32')
-#     x = (x - 128.) / 128.
-#     return x
-# X_train = prepro(X_train)
-# X_valid = prepro(X_valid)
-# X_test = prepro(X_test)
+def prepro(x):
+    x = x.astype('float32')
+    x = (x - 128.) / 128.
+    return x
+X_train = prepro(X_train)
+X_valid = prepro(X_valid)
+X_test = prepro(X_test)
 
 ### Step 1: Dataset Summary & Exploration
 ### Replace each question mark with the appropriate value.
@@ -133,6 +133,11 @@ def LeNet_down(x):
     conv1_layer = tf.nn.conv2d(x, conv1_weights, [1, 1, 1, 1], 'VALID') + conv1_bias
         # Activation.
     conv1_layer = tf.nn.relu(conv1_layer)
+        # Batch normalization
+    beta = tf.get_variable("beta", shape=[c1_out])
+    gamma = tf.get_variable("gamma", shape=[c1_out])
+    mean, variance = tf.nn.moments(conv1_layer, axes=[0, 1, 2])
+    conv1_layer = tf.nn.batch_normalization(conv1_layer, mean, variance, beta, gamma, 1e-8)
         # Pooling. Input = 28x28x6. Output = 14x14x6.
     pool1_layer = tf.nn.max_pool(conv1_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
     # Layer 2: Convolutional. Input = 14x14x6. Output = 10x10x16.
@@ -157,6 +162,8 @@ def LeNet_down(x):
     fc2_layer = tf.add(tf.matmul(fc1_layer, fc2_weights), fc2_bias)
         # Activation.
     fc2_layer = tf.nn.relu(fc2_layer)
+        # Dropout
+    fc2_layer = tf.nn.dropout(fc2_layer, keep_prob)
     # Layer 5: Fully Connected. Input = 84. Output = 43
     out_weights = tf.get_variable("Wout", shape=[fc2_out, fc3_out])
     out_bias = tf.get_variable("bout", shape=[fc3_out])
@@ -202,18 +209,17 @@ def my_model(x):
 x = tf.placeholder(tf.float32, (None, 32, 32, 3))
 y = tf.placeholder(tf.int32, (None))
 one_hot_y = tf.one_hot(y, 43)
+keep_prob = tf.placeholder(tf.float32)
 
 ### training pipeline
-rate = 1e-5
-
+lr = tf.placeholder(tf.float32, shape=[])
 logits = LeNet_down(x)
 cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=one_hot_y, logits=logits)
 loss_operation = tf.reduce_mean(cross_entropy)
-optimizer = tf.train.AdamOptimizer(learning_rate=rate)
+optimizer = tf.train.AdamOptimizer(learning_rate=lr)
 training_operation = optimizer.minimize(loss_operation)
 
 ### Model evaluation
-print(logits.shape)
 pred = tf.argmax(logits, 1)
 label = tf.argmax(one_hot_y, 1)
 correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(one_hot_y, 1))
@@ -227,15 +233,18 @@ def evaluate(X_data, y_data):
     sess = tf.get_default_session()
     for offset in range(0, num_examples, BATCH_SIZE):
         batch_x, batch_y = X_data[offset:offset + BATCH_SIZE], y_data[offset:offset + BATCH_SIZE]
-        accuracy = sess.run(accuracy_operation, feed_dict={x: batch_x, y: batch_y})
+        accuracy = sess.run(accuracy_operation, feed_dict={x: batch_x, y: batch_y, keep_prob: 1})
         total_accuracy += (accuracy * len(batch_x))
     return total_accuracy / num_examples
 
 
 ### Train the model
 from sklearn.utils import shuffle
-EPOCHS = 50
-BATCH_SIZE = 128
+EPOCHS = 20
+BATCH_SIZE = 256
+rate = 1e-3
+rate_decay = 0.95
+
 batch_x, batch_y = X_train[0:BATCH_SIZE], y_train[0:BATCH_SIZE]
 iterations = 0
 loss_series = []
@@ -258,7 +267,8 @@ with tf.Session() as sess:
         for offset in range(0, num_examples, BATCH_SIZE):
             end = offset + BATCH_SIZE
             batch_x, batch_y = X_train[offset:end], y_train[offset:end]
-            loss, _ = sess.run([loss_operation, training_operation], feed_dict={x: batch_x, y: batch_y})
+            loss, _ = sess.run([loss_operation, training_operation],
+                               feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5, lr: rate})
             loss_series.append(loss)
             iterations += 1
 
@@ -279,10 +289,12 @@ with tf.Session() as sess:
         val_acc_series.append(validation_accuracy)
         acc_x.append(iterations)
         print("EPOCH {} ({} iterations)...".format(i + 1, iterations))
+        print("Learning rate: {:.1e}".format(rate))
         print("Loss = {}".format(loss))
         print("Training Accuracy = {:.3f}".format(train_accuracy))
         print("Validation Accuracy = {:.3f}".format(validation_accuracy))
         print()
+        rate *= rate_decay
     # Plot predictions on validation set after training
     # f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3, 3, figsize=(10, 6))
     # for ax in (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9):
