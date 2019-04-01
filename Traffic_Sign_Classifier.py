@@ -21,15 +21,13 @@ X_valid, y_valid = valid['features'], valid['labels']
 X_test, y_test = test['features'], test['labels']
 
 # preprocess to gray
-def rgb2gray(x):
-    gray = np.average(x, axis=3)
-    gray = np.expand_dims(gray, axis=3)
-    gray = gray.astype('float32')
-    gray = (gray - 128.) / 128.
-    return gray
-X_train = rgb2gray(X_train)
-X_valid = rgb2gray(X_valid)
-X_test = rgb2gray(X_test)
+# def prepro(x):
+#     x = x.astype('float32')
+#     x = (x - 128.) / 128.
+#     return x
+# X_train = prepro(X_train)
+# X_valid = prepro(X_valid)
+# X_test = prepro(X_test)
 
 ### Step 1: Dataset Summary & Exploration
 ### Replace each question mark with the appropriate value.
@@ -84,21 +82,19 @@ import tensorflow as tf
 from tensorflow.contrib.layers import flatten
 
 
-def LeNet(x):
+def LeNet5(x):
     # Layer 1: Convolutional. Input = 32x32x1. Output = 28x28x6.
-    conv1_weights = tf.Variable(tf.truncated_normal((5, 5, 1, 6), mean=0, stddev=0.1))
-    conv1_strides = [1, 1, 1, 1]
-    conv1_bias = tf.Variable(tf.zeros(6))
-    conv1_layer = tf.nn.conv2d(x, conv1_weights, conv1_strides, 'VALID') + conv1_bias
+    conv1_weights = tf.get_variable("Wconv1", shape=[5, 5, 3, 6])
+    conv1_bias = tf.get_variable("bconv1", shape=[6])
+    conv1_layer = tf.nn.conv2d(x, conv1_weights, [1, 1, 1, 1], 'VALID') + conv1_bias
         # Activation.
     conv1_layer = tf.nn.relu(conv1_layer)
         # Pooling. Input = 28x28x6. Output = 14x14x6.
     pool1_layer = tf.nn.max_pool(conv1_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
-    # Layer 2: Convolutional. Output = 10x10x16.
-    conv2_weights = tf.Variable(tf.truncated_normal((5, 5, 6, 16), mean=0, stddev=0.1))
-    conv2_strides = [1, 1, 1, 1]
-    conv2_bias = tf.Variable(tf.zeros(16))
-    conv2_layer = tf.nn.conv2d(pool1_layer, conv2_weights, conv2_strides, 'VALID') + conv2_bias
+    # Layer 2: Convolutional. Input = 14x14x6. Output = 10x10x16.
+    conv2_weights = tf.get_variable("Wconv2", shape=[5, 5, 6, 16])
+    conv2_bias = tf.get_variable("bconv2", shape=[16])
+    conv2_layer = tf.nn.conv2d(pool1_layer, conv2_weights, [1, 1, 1, 1], 'VALID') + conv2_bias
         # Activation.
     conv2_layer = tf.nn.relu(conv2_layer)
         # Pooling. Input = 10x10x16. Output = 5x5x16.
@@ -106,21 +102,95 @@ def LeNet(x):
     # Flatten. Input = 5x5x16. Output = 400.
     flat = flatten(pool2_layer)
     # Layer 3: Fully Connected. Input = 400. Output = 120
-    fc1_weights = tf.Variable(tf.truncated_normal((400, 120)))
-    fc1_bias = tf.Variable(tf.zeros(120))
+    fc1_weights = tf.get_variable("W1", shape=[400, 120])
+    fc1_bias = tf.get_variable("b1", shape=[120])
     fc1_layer = tf.add(tf.matmul(flat, fc1_weights), fc1_bias)
         # Activation.
     fc1_layer = tf.nn.relu(fc1_layer)
     # Layer 4: Fully Connected. Input = 120. Output = 84
-    fc2_weights = tf.Variable(tf.truncated_normal((120, 84)))
-    fc2_bias = tf.Variable(tf.zeros(84))
+    fc2_weights = tf.get_variable("W2", shape=[120, 84])
+    fc2_bias = tf.get_variable("b2", shape=[84])
     fc2_layer = tf.add(tf.matmul(fc1_layer, fc2_weights), fc2_bias)
         # Activation.
     fc2_layer = tf.nn.relu(fc2_layer)
-    # Layer 5: Fully Connected. Input = 84. Output = 10
-    out_weights = tf.Variable(tf.truncated_normal((84, 43)))
-    out_bias = tf.Variable(tf.zeros(43))
+    # Layer 5: Fully Connected. Input = 84. Output = 43
+    out_weights = tf.get_variable("Wout", shape=[84, 43])
+    out_bias = tf.get_variable("bout", shape=[43])
     logits = tf.add(tf.matmul(fc2_layer, out_weights), out_bias)
+    return logits
+
+
+def LeNet_down(x):
+    c1_out = 32
+    c2_out = 64
+    fc1_in = 5 * 5 * c2_out
+    fc1_out = 1024
+    fc2_out = 344
+    fc3_out = 43
+    # Layer 1: Convolutional. Input = 32x32x1. Output = 28x28x6.
+    conv1_weights = tf.get_variable("Wconv1", shape=[5, 5, 3, c1_out])
+    conv1_bias = tf.get_variable("bconv1", shape=[c1_out])
+    conv1_layer = tf.nn.conv2d(x, conv1_weights, [1, 1, 1, 1], 'VALID') + conv1_bias
+        # Activation.
+    conv1_layer = tf.nn.relu(conv1_layer)
+        # Pooling. Input = 28x28x6. Output = 14x14x6.
+    pool1_layer = tf.nn.max_pool(conv1_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
+    # Layer 2: Convolutional. Input = 14x14x6. Output = 10x10x16.
+    conv2_weights = tf.get_variable("Wconv2", shape=[5, 5, c1_out, c2_out])
+    conv2_bias = tf.get_variable("bconv2", shape=[c2_out])
+    conv2_layer = tf.nn.conv2d(pool1_layer, conv2_weights, [1, 1, 1, 1], 'VALID') + conv2_bias
+        # Activation.
+    conv2_layer = tf.nn.relu(conv2_layer)
+        # Pooling. Input = 10x10x16. Output = 5x5x16.
+    pool2_layer = tf.nn.max_pool(conv2_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
+    # Flatten. Input = 5x5x16. Output = 400.
+    flat = flatten(pool2_layer)
+    # Layer 3: Fully Connected. Input = 400. Output = 120
+    fc1_weights = tf.get_variable("W1", shape=[fc1_in, fc1_out])
+    fc1_bias = tf.get_variable("b1", shape=[fc1_out])
+    fc1_layer = tf.add(tf.matmul(flat, fc1_weights), fc1_bias)
+        # Activation.
+    fc1_layer = tf.nn.relu(fc1_layer)
+    # Layer 4: Fully Connected. Input = 120. Output = 84
+    fc2_weights = tf.get_variable("W2", shape=[fc1_out, fc2_out])
+    fc2_bias = tf.get_variable("b2", shape=[fc2_out])
+    fc2_layer = tf.add(tf.matmul(fc1_layer, fc2_weights), fc2_bias)
+        # Activation.
+    fc2_layer = tf.nn.relu(fc2_layer)
+    # Layer 5: Fully Connected. Input = 84. Output = 43
+    out_weights = tf.get_variable("Wout", shape=[fc2_out, fc3_out])
+    out_bias = tf.get_variable("bout", shape=[fc3_out])
+    logits = tf.add(tf.matmul(fc2_layer, out_weights), out_bias)
+    return logits
+
+
+def my_model(x):
+    # Layer 1: Convolutional. Input = 32x32x1. Output = 26x26x32
+    conv1_weights = tf.get_variable("Wconv1", shape=[7, 7, 1, 32])
+    conv1_bias = tf.get_variable("bconv1", shape=[32])
+    conv1_layer = tf.nn.conv2d(x, conv1_weights, strides=[1, 1, 1, 1], padding='VALID') + conv1_bias
+        # Activation
+    conv1_layer = tf.nn.relu(conv1_layer)
+        # Batch normalization
+        # beta = tf.get_variable("beta", shape=[32])
+        # gamma = tf.get_variable("gamma", shape=[32])
+        # mean, variance = tf.nn.moments(h1, axes=[0, 1, 2])
+        # bn = tf.nn.batch_normalization(h1, mean, variance, beta, gamma, 1e-8)
+        # Pooling. Input = 26x26x32. Output = 13x13x32
+    pool1_layer = tf.nn.max_pool(conv1_layer, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID')
+    # Flatten.Input = 13x13x32.Output = 5408
+    flat_dim = 5408
+    flat = tf.reshape(pool1_layer, [-1, flat_dim])
+    # Layer 2: Fully Connected. Input = 5408. Output = 1024
+    fc1_weights = tf.get_variable("W1", shape=[flat_dim, 1024])
+    fc1_bias = tf.get_variable("b1", shape=[1024])
+    fc1_layer = tf.matmul(flat, fc1_weights) + fc1_bias
+        # Activation
+    fc1_layer = tf.nn.relu(fc1_layer)
+    # Layer 3: Fully Connected. Input = 1024. Output = 43
+    out_weights = tf.get_variable("W2", shape=[1024, 43])
+    out_bias = tf.get_variable("b2", shape=[43])
+    logits = tf.matmul(fc1_layer, out_weights) + out_bias
     return logits
 
 
@@ -129,14 +199,14 @@ def LeNet(x):
 ### Once a final model architecture is selected,
 ### the accuracy on the test set should be calculated and reported as well.
 ### Feel free to use as many code cells as needed.
-x = tf.placeholder(tf.float32, (None, 32, 32, 1))
+x = tf.placeholder(tf.float32, (None, 32, 32, 3))
 y = tf.placeholder(tf.int32, (None))
 one_hot_y = tf.one_hot(y, 43)
 
 ### training pipeline
 rate = 1e-5
 
-logits = LeNet(x)
+logits = LeNet_down(x)
 cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=one_hot_y, logits=logits)
 loss_operation = tf.reduce_mean(cross_entropy)
 optimizer = tf.train.AdamOptimizer(learning_rate=rate)
@@ -164,7 +234,7 @@ def evaluate(X_data, y_data):
 
 ### Train the model
 from sklearn.utils import shuffle
-EPOCHS = 10
+EPOCHS = 50
 BATCH_SIZE = 128
 batch_x, batch_y = X_train[0:BATCH_SIZE], y_train[0:BATCH_SIZE]
 iterations = 0
@@ -192,19 +262,18 @@ with tf.Session() as sess:
             loss_series.append(loss)
             iterations += 1
 
-        # train_accuracy = evaluate(batch_x, batch_y)
-        corr = sess.run(correct_prediction, feed_dict={x: batch_x, y: batch_y})
-        train_accuracy = sess.run(accuracy_operation, feed_dict={x: batch_x, y: batch_y})
-        logit1 = sess.run(logits, feed_dict={x: X_train[0:1], y: y_train[0:1]})
-        one_hot1 = sess.run(one_hot_y, feed_dict={x: X_train[0:1], y: y_train[0:1]})
-        print("Logit1: ", logit1)
-        print("One hot1: ", one_hot1)
-        prediction = sess.run(pred, feed_dict={x: X_train[0:10], y: y_train[0:10]})
-        labels = sess.run(label, feed_dict={x: X_train[0:10], y: y_train[0:10]})
-        print("Pred: ", prediction)
-        print("Label: ", labels)
+        # corr = sess.run(correct_prediction, feed_dict={x: batch_x, y: batch_y})
+        # train_accuracy = sess.run(accuracy_operation, feed_dict={x: batch_x, y: batch_y})
+        # logit1 = sess.run(logits, feed_dict={x: X_train[0:1], y: y_train[0:1]})
+        # one_hot1 = sess.run(one_hot_y, feed_dict={x: X_train[0:1], y: y_train[0:1]})
+        # print("Logit1: ", logit1)
+        # print("One hot1: ", one_hot1)
+        # prediction = sess.run(pred, feed_dict={x: X_train[0:10], y: y_train[0:10]})
+        # labels = sess.run(label, feed_dict={x: X_train[0:10], y: y_train[0:10]})
+        # print("Pred: ", prediction)
+        # print("Label: ", labels)
 
-        train_accuracy = np.sum(corr)/128
+        train_accuracy = evaluate(batch_x, batch_y)
         train_acc_series.append(train_accuracy)
         validation_accuracy = evaluate(X_valid, y_valid)
         val_acc_series.append(validation_accuracy)
@@ -215,7 +284,7 @@ with tf.Session() as sess:
         print("Validation Accuracy = {:.3f}".format(validation_accuracy))
         print()
     # Plot predictions on validation set after training
-    # f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3, 3, figsize=(12, 8))
+    # f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3, 3, figsize=(10, 6))
     # for ax in (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9):
     #     n = int(np.random.rand() * 4410)
     #     prediction = sess.run(pred, feed_dict={x: X_valid[n:n + 1], y: y_valid[n:n + 1]})
