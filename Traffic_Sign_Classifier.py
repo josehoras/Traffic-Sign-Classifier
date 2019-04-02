@@ -16,18 +16,18 @@ with open(validation_file, mode='rb') as f:
 with open(testing_file, mode='rb') as f:
     test = pickle.load(f)
 
-X_train, y_train = train['features'], train['labels']
-X_valid, y_valid = valid['features'], valid['labels']
-X_test, y_test = test['features'], test['labels']
+X_train_raw, y_train = train['features'], train['labels']
+X_valid_raw, y_valid = valid['features'], valid['labels']
+X_test_raw, y_test = test['features'], test['labels']
 
 # preprocess to gray
 def prepro(x):
     x = x.astype('float32')
     x = (x - 128.) / 128.
     return x
-X_train = prepro(X_train)
-X_valid = prepro(X_valid)
-X_test = prepro(X_test)
+X_train = prepro(X_train_raw)
+X_valid = prepro(X_valid_raw)
+X_test = prepro(X_test_raw)
 
 ### Step 1: Dataset Summary & Exploration
 ### Replace each question mark with the appropriate value.
@@ -168,7 +168,7 @@ def LeNet_down(x):
     out_weights = tf.get_variable("Wout", shape=[fc2_out, fc3_out])
     out_bias = tf.get_variable("bout", shape=[fc3_out])
     logits = tf.add(tf.matmul(fc2_layer, out_weights), out_bias)
-    return logits
+    return logits, conv1_layer
 
 
 def my_model(x):
@@ -213,7 +213,7 @@ keep_prob = tf.placeholder(tf.float32)
 
 ### training pipeline
 lr = tf.placeholder(tf.float32, shape=[])
-logits = LeNet_down(x)
+logits, act_layer = LeNet_down(x)
 cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=one_hot_y, logits=logits)
 loss_operation = tf.reduce_mean(cross_entropy)
 optimizer = tf.train.AdamOptimizer(learning_rate=lr)
@@ -224,7 +224,7 @@ pred = tf.argmax(logits, 1)
 label = tf.argmax(one_hot_y, 1)
 correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(one_hot_y, 1))
 accuracy_operation = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-# saver = tf.train.Saver()
+saver = tf.train.Saver()
 
 
 def evaluate(X_data, y_data):
@@ -243,7 +243,7 @@ from sklearn.utils import shuffle
 EPOCHS = 20
 BATCH_SIZE = 256
 rate = 1e-3
-rate_decay = 0.95
+rate_decay = 0.96
 
 batch_x, batch_y = X_train[0:BATCH_SIZE], y_train[0:BATCH_SIZE]
 iterations = 0
@@ -251,67 +251,154 @@ loss_series = []
 train_acc_series = []
 val_acc_series = []
 acc_x = []
-with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    num_examples = len(X_train)
-    print("Num examples: ", num_examples)
-    print("Training...")
-    print()
-    train_accuracy = evaluate(batch_x, batch_y)
-    train_acc_series.append(train_accuracy)
-    validation_accuracy = evaluate(X_valid, y_valid)
-    val_acc_series.append(validation_accuracy)
-    acc_x.append(iterations)
-    for i in range(EPOCHS):
-        X_train, y_train = shuffle(X_train, y_train)
-        for offset in range(0, num_examples, BATCH_SIZE):
-            end = offset + BATCH_SIZE
-            batch_x, batch_y = X_train[offset:end], y_train[offset:end]
-            loss, _ = sess.run([loss_operation, training_operation],
-                               feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5, lr: rate})
-            loss_series.append(loss)
-            iterations += 1
-
-        # corr = sess.run(correct_prediction, feed_dict={x: batch_x, y: batch_y})
-        # train_accuracy = sess.run(accuracy_operation, feed_dict={x: batch_x, y: batch_y})
-        # logit1 = sess.run(logits, feed_dict={x: X_train[0:1], y: y_train[0:1]})
-        # one_hot1 = sess.run(one_hot_y, feed_dict={x: X_train[0:1], y: y_train[0:1]})
-        # print("Logit1: ", logit1)
-        # print("One hot1: ", one_hot1)
-        # prediction = sess.run(pred, feed_dict={x: X_train[0:10], y: y_train[0:10]})
-        # labels = sess.run(label, feed_dict={x: X_train[0:10], y: y_train[0:10]})
-        # print("Pred: ", prediction)
-        # print("Label: ", labels)
-
+training = False
+if training:
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        num_examples = len(X_train)
+        print("Num examples: ", num_examples)
+        print("Training...")
+        print()
         train_accuracy = evaluate(batch_x, batch_y)
         train_acc_series.append(train_accuracy)
         validation_accuracy = evaluate(X_valid, y_valid)
         val_acc_series.append(validation_accuracy)
         acc_x.append(iterations)
-        print("EPOCH {} ({} iterations)...".format(i + 1, iterations))
-        print("Learning rate: {:.1e}".format(rate))
-        print("Loss = {}".format(loss))
-        print("Training Accuracy = {:.3f}".format(train_accuracy))
-        print("Validation Accuracy = {:.3f}".format(validation_accuracy))
-        print()
-        rate *= rate_decay
-    # Plot predictions on validation set after training
-    # f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3, 3, figsize=(10, 6))
-    # for ax in (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9):
-    #     n = int(np.random.rand() * 4410)
-    #     prediction = sess.run(pred, feed_dict={x: X_valid[n:n + 1], y: y_valid[n:n + 1]})
-    #     ax.imshow(np.squeeze(X_valid[n]))
-    #     ax.axis('off')
-    #     ax.set_title(signs_dict[str(prediction[0])])
-    # plt.show()
-    # saver.save(sess, './lenet')
-    # print("Model saved")
+        for i in range(EPOCHS):
+            X_train, y_train = shuffle(X_train, y_train)
+            for offset in range(0, num_examples, BATCH_SIZE):
+                end = offset + BATCH_SIZE
+                batch_x, batch_y = X_train[offset:end], y_train[offset:end]
+                loss, _ = sess.run([loss_operation, training_operation],
+                                   feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5, lr: rate})
+                loss_series.append(loss)
+                iterations += 1
 
-f, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 7))
-ax1.plot(loss_series)
-ax1.set_title("Loss")
-ax2.plot(acc_x, train_acc_series, marker='o', label="Training")
-ax2.plot(acc_x, val_acc_series, marker='o', label="Validation")
-ax2.legend(loc='lower right')
-ax2.set_title("Accuracy")
+            # corr = sess.run(correct_prediction, feed_dict={x: batch_x, y: batch_y})
+            # train_accuracy = sess.run(accuracy_operation, feed_dict={x: batch_x, y: batch_y})
+            # logit1 = sess.run(logits, feed_dict={x: X_train[0:1], y: y_train[0:1]})
+            # one_hot1 = sess.run(one_hot_y, feed_dict={x: X_train[0:1], y: y_train[0:1]})
+            # print("Logit1: ", logit1)
+            # print("One hot1: ", one_hot1)
+            # prediction = sess.run(pred, feed_dict={x: X_train[0:10], y: y_train[0:10]})
+            # labels = sess.run(label, feed_dict={x: X_train[0:10], y: y_train[0:10]})
+            # print("Pred: ", prediction)
+            # print("Label: ", labels)
+
+            train_accuracy = evaluate(batch_x, batch_y)
+            train_acc_series.append(train_accuracy)
+            validation_accuracy = evaluate(X_valid, y_valid)
+            val_acc_series.append(validation_accuracy)
+            acc_x.append(iterations)
+            print("EPOCH {} ({} iterations)...".format(i + 1, iterations))
+            print("Learning rate: {:.1e}".format(rate))
+            print("Loss = {}".format(loss))
+            print("Training Accuracy = {:.3f}".format(train_accuracy))
+            print("Validation Accuracy = {:.3f}".format(validation_accuracy))
+            print()
+            rate *= rate_decay
+        # Plot predictions on validation set after training
+        # f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3, 3, figsize=(10, 6))
+        # for ax in (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9):
+        #     n = int(np.random.rand() * 4410)
+        #     prediction = sess.run(pred, feed_dict={x: X_valid[n:n + 1], y: y_valid[n:n + 1]})
+        #     ax.imshow(np.squeeze(X_valid[n]))
+        #     ax.axis('off')
+        #     ax.set_title(signs_dict[str(prediction[0])])
+        # plt.show()
+        saver.save(sess, './traffic_model')
+        print("Model saved")
+
+    f, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 7))
+    ax1.plot(loss_series)
+    ax1.set_title("Loss")
+    ax2.plot(acc_x, train_acc_series, marker='o', label="Training")
+    ax2.plot(acc_x, val_acc_series, marker='o', label="Validation")
+    ax2.legend(loc='lower right')
+    ax2.set_title("Accuracy")
+    plt.show()
+
+from PIL import Image
+import os
+image_files = ['example_signs/' + image_file for image_file in os.listdir('example_signs')]
+images = []
+for image_file in image_files:
+    print(image_file)
+    if os.path.isfile(image_file):
+        image = Image.open(image_file)
+        image = image.resize((32, 32), Image.ANTIALIAS)
+        image = np.array(image, dtype="int32" )
+        images.append(image)
+images = np.array(images, dtype="int32" )
+images_pre = prepro(images)
+print(images.shape)
+
+
+with tf.Session() as sess:
+    saver.restore(sess, './traffic_model')
+    prediction = sess.run(pred, feed_dict={x: images_pre, keep_prob: 1})
+    logits = sess.run(logits, feed_dict={x: images_pre, keep_prob: 1})
+    best_logits = sess.run(tf.nn.top_k(tf.nn.softmax(logits), k=5), feed_dict={x: images_pre, keep_prob: 1})
+    # print(logits)
+    # print(best_logits)
+    # print(prediction)
+# Plot predictions on validation set after training
+f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3, 3, figsize=(10, 6))
+for i, ax in enumerate((ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9)):
+    ax.imshow(images[i])
+    ax.axis('off')
+    ax.set_title(str(prediction[i]) + ": " + signs_dict[str(prediction[i])])
 plt.show()
+
+# for i in range(9):
+#     axes = ((ax1, ax2, ax3), (ax4, ax5, ax6))
+#     f, axes = plt.subplots(2, 3, figsize=(6, 4))
+#     for axs in axes:
+#         for ax in axs:
+#             ax.axis('off')
+#     axes[0][0].imshow(images[i])
+#     txt = ''
+#     for j in range(5):
+#         logit = str(best_logits[1][i][j])
+#         prob = "%.1f" % (best_logits[0][i][j] * 100)
+#         txt = txt + logit + ": " + signs_dict[logit] + ' (' + prob + '%)\n'
+#         if j < 3:
+#             idx = np.where(y_train == best_logits[1][i][j])[0][20]
+#             print(idx, X_train[idx].shape)
+#             axes[1][j].imshow(X_train_raw[idx])
+#     f.text(0.4, 0.9, txt, fontsize=10, va='top', wrap = True, bbox={'facecolor':'None'})
+#     plt.show()
+
+### Visualize your network's feature maps here.
+### Feel free to use as many code cells as needed.
+
+# image_input: the test image being fed into the network to produce the feature maps
+# tf_activation: should be a tf variable name used during your training procedure that represents the calculated state of a specific weight layer
+# activation_min/max: can be used to view the activation contrast in more detail, by default matplot sets min and max to the actual min and max values of the output
+# plt_num: used to plot out multiple different weight feature map sets on the same block, just extend the plt number for each new feature map entry
+
+def outputFeatureMap(image_input, tf_activation, activation_min=-1, activation_max=-1 ,plt_num=1):
+    # Here make sure to preprocess your image_input in a way your network expects
+    # with size, normalization, ect if needed
+    # image_input =
+    # Note: x should be the same name as your network's tensorflow data placeholder variable
+    # If you get an error tf_activation is not defined it may be having trouble accessing the variable from inside a function
+    with tf.Session() as sess:
+        saver.restore(sess, './traffic_model')
+        activation = tf_activation.eval(session=sess, feed_dict={x: image_input, keep_prob: 1})
+        featuremaps = activation.shape[3]
+        plt.figure(plt_num, figsize=(14, 8))
+        for featuremap in range(featuremaps):
+            plt.subplot(4,8, featuremap+1) # sets the number of feature maps to show on each row and column
+            plt.title('FeatureMap ' + str(featuremap)) # displays the feature map number
+            if activation_min != -1 & activation_max != -1:
+                plt.imshow(activation[0,:,:, featuremap], interpolation="nearest", vmin =activation_min, vmax=activation_max, cmap="gray")
+            elif activation_max != -1:
+                plt.imshow(activation[0,:,:, featuremap], interpolation="nearest", vmax=activation_max, cmap="gray")
+            elif activation_min !=-1:
+                plt.imshow(activation[0,:,:, featuremap], interpolation="nearest", vmin=activation_min, cmap="gray")
+            else:
+                plt.imshow(activation[0,:,:, featuremap], interpolation="nearest", cmap="gray")
+        plt.show()
+
+# outputFeatureMap(np.expand_dims(images[5], axis=0), act_layer, activation_min=-1, activation_max=-1 ,plt_num=1)
