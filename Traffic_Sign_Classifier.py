@@ -3,8 +3,6 @@
 import pickle
 import numpy as np
 
-# TODO: Fill this in based on where you saved the training and testing data
-
 training_file = "train.p"
 validation_file = "valid.p"
 testing_file = "test.p"
@@ -16,16 +14,34 @@ with open(validation_file, mode='rb') as f:
 with open(testing_file, mode='rb') as f:
     test = pickle.load(f)
 
-X_train_raw, y_train = train['features'], train['labels']
+X_train_raw, y_train_raw = train['features'], train['labels']
 X_valid_raw, y_valid = valid['features'], valid['labels']
 X_test_raw, y_test = test['features'], test['labels']
+
+
+# Add augmented training data
+def add_data(new_data_file, X_train_old, y_train_old):
+    training_new = new_data_file
+    with open(training_new, mode='rb') as f:
+        train_new = pickle.load(f)
+    X_train_new, y_train_new = train_new['features'], train_new['labels']
+    X_train_old = np.append(X_train_old, X_train_new, axis=0)
+    y_train_old = np.append(y_train_old, y_train_new, axis=0)
+    return X_train_old, y_train_old
+
+
+X_train_aug, y_train_aug = add_data("train_rot.p", X_train_raw, y_train_raw)
+X_train_aug, y_train_aug = add_data("train_rect.p", X_train_aug, y_train_aug)
+X_train_aug, y_train_aug = add_data("train_trans.p", X_train_aug, y_train_aug)
 
 # preprocess to gray
 def prepro(x):
     x = x.astype('float32')
     x = (x - 128.) / 128.
     return x
-X_train = prepro(X_train_raw)
+
+X_train = prepro(X_train_aug)
+y_train = y_train_aug
 X_valid = prepro(X_valid_raw)
 X_test = prepro(X_test_raw)
 
@@ -60,11 +76,20 @@ signs_dict = dict((rows[0], rows[1]) for rows in reader)
 
 import matplotlib.pyplot as plt
 # Visualizations will be shown in the notebook.
-# n = 19000
-# plt.imshow(np.squeeze(X_train[n]))
+# n = 19000 + 34799
+# plt.imshow(X_train_aug[n])
 # plt.axis('off')
-# plt.title(signs_dict[str(y_train[n])])
-# plt.show()
+# plt.title(signs_dict[str(y_train_aug[n])])
+
+plt.figure(1, figsize=(18, 7))
+for i in range(43):
+    plt.subplot(5, 9, i + 1)  # sets the number of feature maps to show on each row and column
+    plt.title(str(i) + ": " + signs_dict[str(i)], fontsize=8)
+    plt.axis('off')
+    idx = np.where(y_train_raw == i)[0][80]
+    plt.imshow(X_train_raw[idx])
+plt.tight_layout()
+plt.show()
 
 ### Step 2: Design and Test a Model Architecture
 ### Preprocess the data here. It is required to normalize the data. Other preprocessing steps could include
@@ -251,7 +276,7 @@ loss_series = []
 train_acc_series = []
 val_acc_series = []
 acc_x = []
-training = False
+training = True
 if training:
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -350,24 +375,24 @@ for i, ax in enumerate((ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9)):
     ax.set_title(str(prediction[i]) + ": " + signs_dict[str(prediction[i])])
 plt.show()
 
-# for i in range(9):
-#     axes = ((ax1, ax2, ax3), (ax4, ax5, ax6))
-#     f, axes = plt.subplots(2, 3, figsize=(6, 4))
-#     for axs in axes:
-#         for ax in axs:
-#             ax.axis('off')
-#     axes[0][0].imshow(images[i])
-#     txt = ''
-#     for j in range(5):
-#         logit = str(best_logits[1][i][j])
-#         prob = "%.1f" % (best_logits[0][i][j] * 100)
-#         txt = txt + logit + ": " + signs_dict[logit] + ' (' + prob + '%)\n'
-#         if j < 3:
-#             idx = np.where(y_train == best_logits[1][i][j])[0][20]
-#             print(idx, X_train[idx].shape)
-#             axes[1][j].imshow(X_train_raw[idx])
-#     f.text(0.4, 0.9, txt, fontsize=10, va='top', wrap = True, bbox={'facecolor':'None'})
-#     plt.show()
+for i in range(9):
+    axes = ((ax1, ax2, ax3), (ax4, ax5, ax6))
+    f, axes = plt.subplots(2, 3, figsize=(6, 4))
+    for axs in axes:
+        for ax in axs:
+            ax.axis('off')
+    axes[0][0].imshow(images[i])
+    txt = ''
+    for j in range(5):
+        logit = str(best_logits[1][i][j])
+        prob = "%.1f" % (best_logits[0][i][j] * 100)
+        txt = txt + logit + ": " + signs_dict[logit] + ' (' + prob + '%)\n'
+        if j < 3:
+            idx = np.where(y_train_aug == best_logits[1][i][j])[0][20]
+            print(idx, X_train[idx].shape)
+            axes[1][j].imshow(X_train_aug[idx])
+    f.text(0.4, 0.9, txt, fontsize=10, va='top', wrap = True, bbox={'facecolor':'None'})
+    plt.show()
 
 ### Visualize your network's feature maps here.
 ### Feel free to use as many code cells as needed.
