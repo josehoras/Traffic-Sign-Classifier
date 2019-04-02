@@ -1,5 +1,4 @@
-### Step 0: Load The Data
-
+# Import all needed libraries
 import tensorflow as tf
 from tensorflow.contrib.layers import flatten
 from sklearn.utils import shuffle
@@ -10,6 +9,7 @@ import numpy as np
 from PIL import Image
 import os
 
+### Step 0: Load The Data
 # Load pickled data
 training_file = "train.p"
 validation_file = "valid.p"
@@ -42,8 +42,6 @@ for filename in ("train_trans.p", "train_rot.p", "train_rect.p"):
     X_train, y_train = add_data(filename, X_train, y_train)
 
 ### Step 1: Dataset Summary & Exploration
-### Replace each question mark with the appropriate value.
-### Use python, pandas or numpy methods rather than hard coding the results
 
 # Number of training examples
 n_train = X_train.shape[0]
@@ -61,31 +59,31 @@ print("Number of validation examples =", n_validation)
 print("Number of testing examples =", n_test)
 print("Image data shape =", image_shape)
 print("Number of classes =", n_classes)
-print("Labels: ", y_train.shape, y_train[0])
+
 ### Data exploration visualization code goes here.
 ### Feel free to use as many code cells as needed.
 
 # Open csv and place signnames in dictionary
 reader = csv.reader(open('signnames.csv', mode='r'))
 signs_dict = dict((rows[0], rows[1]) for rows in reader)
-
-
-# Visualizations will be shown in the notebook.
-plt.figure(1, figsize=(18, 7))
-for i in range(43):
-    plt.subplot(5, 9, i + 1)  # sets the number of feature maps to show on each row and column
-    plt.title(str(i) + ": " + signs_dict[str(i)], fontsize=8)
+from textwrap import wrap
+# Visualizations
+n = 40 # number of classes to display
+rows = 8
+cols = 5
+plt.figure(1, figsize=(cols*2, rows*2))
+for i in range(n):
+    plt.subplot(rows, cols, i + 1)  # sets the number of feature maps to show on each row and column
+    plt.title(str(i) + ": " + signs_dict[str(i)], fontsize=12)
     plt.axis('off')
-    idx = np.where(y_train == i)[0][80]
+    idx = np.where(y_train == i)[0][50]
     plt.imshow(X_train[idx])
+# plt.subplots_adjust(wspace=0.1, hspace=0)
 plt.tight_layout()
 plt.show()
 
 ### Step 2: Design and Test a Model Architecture
-### Preprocess the data here. It is required to normalize the data. Other preprocessing steps could include
-### converting to grayscale, etc.
-### Feel free to use as many code cells as needed.
-# preprocess to gray
+# center and normalize
 def prepro(x):
     x = x.astype('float32')
     x = (x - 128.) / 128.
@@ -96,7 +94,6 @@ X_valid_norm = prepro(X_valid)
 X_test_norm = prepro(X_test)
 
 ### Define your architecture here.
-### Feel free to use as many code cells as needed.
 def sign_model(x):
     c1_out = 32
     c2_out = 64
@@ -149,10 +146,7 @@ def sign_model(x):
 
 
 ### Train your model here.
-### Calculate and report the accuracy on the training and validation set.
-### Once a final model architecture is selected,
-### the accuracy on the test set should be calculated and reported as well.
-### Feel free to use as many code cells as needed.
+# Data placeholder
 x = tf.placeholder(tf.float32, (None, 32, 32, 3))
 y = tf.placeholder(tf.int32, (None))
 one_hot_y = tf.one_hot(y, 43)
@@ -167,12 +161,10 @@ optimizer = tf.train.AdamOptimizer(learning_rate=lr)
 training_operation = optimizer.minimize(loss_operation)
 
 ### Model evaluation
-pred = tf.argmax(logits, 1)
-label = tf.argmax(one_hot_y, 1)
+prediction = tf.argmax(logits, 1)
 correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(one_hot_y, 1))
 accuracy_operation = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 saver = tf.train.Saver()
-
 
 def evaluate(X_data, y_data):
     num_examples = len(X_data)
@@ -191,25 +183,25 @@ BATCH_SIZE = 256
 rate = 1e-3
 rate_decay = 0.96
 
-batch_x, batch_y = X_train_norm[0:BATCH_SIZE], y_train[0:BATCH_SIZE]
 iterations = 0
 loss_series = []
 train_acc_series = []
 val_acc_series = []
 acc_x = []
-training = True
+training = False
 if training:
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         num_examples = len(X_train)
-        print("Num examples: ", num_examples)
         print("Training...")
         print()
+        batch_x, batch_y = X_train_norm[0:BATCH_SIZE], y_train[0:BATCH_SIZE]
         train_accuracy = evaluate(batch_x, batch_y)
         train_acc_series.append(train_accuracy)
         validation_accuracy = evaluate(X_valid, y_valid)
         val_acc_series.append(validation_accuracy)
         acc_x.append(iterations)
+
         for i in range(EPOCHS):
             X_train_norm, y_train = shuffle(X_train_norm, y_train)
             for offset in range(0, num_examples, BATCH_SIZE):
@@ -219,17 +211,6 @@ if training:
                                    feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5, lr: rate})
                 loss_series.append(loss)
                 iterations += 1
-
-            # corr = sess.run(correct_prediction, feed_dict={x: batch_x, y: batch_y})
-            # train_accuracy = sess.run(accuracy_operation, feed_dict={x: batch_x, y: batch_y})
-            # logit1 = sess.run(logits, feed_dict={x: X_train_norm[0:1], y: y_train[0:1]})
-            # one_hot1 = sess.run(one_hot_y, feed_dict={x: X_train_norm[0:1], y: y_train[0:1]})
-            # print("Logit1: ", logit1)
-            # print("One hot1: ", one_hot1)
-            # prediction = sess.run(pred, feed_dict={x: X_train_norm[0:10], y: y_train[0:10]})
-            # labels = sess.run(label, feed_dict={x: X_train_norm[0:10], y: y_train[0:10]})
-            # print("Pred: ", prediction)
-            # print("Label: ", labels)
 
             train_accuracy = evaluate(X_train_norm, y_train)
             train_acc_series.append(train_accuracy)
@@ -243,18 +224,10 @@ if training:
             print("Validation Accuracy = {:.3f}".format(validation_accuracy))
             print()
             rate *= rate_decay
-        # Plot predictions on validation set after training
-        # f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3, 3, figsize=(10, 6))
-        # for ax in (ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9):
-        #     n = int(np.random.rand() * 4410)
-        #     prediction = sess.run(pred, feed_dict={x: X_valid[n:n + 1], y: y_valid[n:n + 1]})
-        #     ax.imshow(np.squeeze(X_valid[n]))
-        #     ax.axis('off')
-        #     ax.set_title(signs_dict[str(prediction[0])])
-        # plt.show()
         saver.save(sess, './traffic_model')
         print("Model saved")
 
+    # Plot loss and accuracy history
     f, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 7))
     ax1.plot(loss_series)
     ax1.set_title("Loss")
@@ -264,52 +237,55 @@ if training:
     ax2.set_title("Accuracy")
     plt.show()
 
-image_files = ['example_signs/' + image_file for image_file in os.listdir('example_signs')]
+image_files = [image_file for image_file in os.listdir('example_signs')]
 images = []
+labels = []
 for image_file in image_files:
     print(image_file)
-    if os.path.isfile(image_file):
-        image = Image.open(image_file)
+    if os.path.isfile('example_signs/' + image_file):
+        image = Image.open('example_signs/' + image_file)
         image = image.resize((32, 32), Image.ANTIALIAS)
         image = np.array(image, dtype="int32" )
         images.append(image)
-images = np.array(images, dtype="int32" )
-images_pre = prepro(images)
-print(images.shape)
+        labels.append(image_file.split('.')[0].split('_')[1])
+my_labels = np.array(labels, dtype="int32" )
+my_images = np.array(images, dtype="int32" )
+my_images_pre = prepro(my_images)
 
 
 with tf.Session() as sess:
     saver.restore(sess, './traffic_model')
-    prediction = sess.run(pred, feed_dict={x: images_pre, keep_prob: 1})
-    logits = sess.run(logits, feed_dict={x: images_pre, keep_prob: 1})
-    best_logits = sess.run(tf.nn.top_k(tf.nn.softmax(logits), k=5), feed_dict={x: images_pre, keep_prob: 1})
-    # print(logits)
-    # print(best_logits)
-    # print(prediction)
+    predictions = sess.run(prediction, feed_dict={x: my_images_pre, keep_prob: 1})
+    best_logits = sess.run(tf.nn.top_k(tf.nn.softmax(logits), k=5), feed_dict={x: my_images_pre, keep_prob: 1})
 # Plot predictions on validation set after training
 f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3, 3, figsize=(10, 6))
 for i, ax in enumerate((ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9)):
-    ax.imshow(images[i])
+    ax.imshow(my_images[i])
     ax.axis('off')
-    ax.set_title(str(prediction[i]) + ": " + signs_dict[str(prediction[i])])
+    ax.set_title(str(predictions[i]) + ": " + signs_dict[str(predictions[i])])
 plt.show()
 
+print("pred: ", predictions)
+print("labels: ", my_labels)
+num_correct = np.sum(predictions == my_labels)
+print("num_correct: ", num_correct)
+my_acc = int(num_correct * 100 / predictions.shape[0])
+print("Accuracy: {}%".format(my_acc))
+
+
+### Print out the top five softmax probabilities for the predictions on the German traffic sign images found on the web.
 for i in range(9):
-    axes = ((ax1, ax2, ax3), (ax4, ax5, ax6))
-    f, axes = plt.subplots(2, 3, figsize=(6, 4))
-    for axs in axes:
-        for ax in axs:
-            ax.axis('off')
-    axes[0][0].imshow(images[i])
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 2))
+    for ax in (ax1, ax2, ax3):
+        ax.axis('off')
+    ax1.imshow(my_images[i])
     txt = ''
     for j in range(5):
         logit = str(best_logits[1][i][j])
         prob = "%.1f" % (best_logits[0][i][j] * 100)
-        txt = txt + logit + ": " + signs_dict[logit] + ' (' + prob + '%)\n'
-        if j < 3:
-            idx = np.where(y_train == best_logits[1][i][j])[0][20]
-            axes[1][j].imshow(X_train_norm[idx])
-    f.text(0.4, 0.9, txt, fontsize=10, va='top', wrap = True, bbox={'facecolor':'None'})
+        txt = txt + logit + ": " + signs_dict[logit] + ' (' + prob + '%)'
+        if j < 4: txt = txt + '\n'
+    f.text(0.35, 0.87, txt, fontsize=16, va='top', bbox={'facecolor':'None'})
     plt.show()
 
 ### Visualize your network's feature maps here.
@@ -344,4 +320,4 @@ def outputFeatureMap(image_input, tf_activation, activation_min=-1, activation_m
                 plt.imshow(activation[0,:,:, featuremap], interpolation="nearest", cmap="gray")
         plt.show()
 
-outputFeatureMap(np.expand_dims(images[5], axis=0), act_layer, activation_min=-1, activation_max=-1 ,plt_num=1)
+# outputFeatureMap(np.expand_dims(images[5], axis=0), act_layer, activation_min=-1, activation_max=-1 ,plt_num=1)
