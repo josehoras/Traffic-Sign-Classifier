@@ -5,6 +5,12 @@ Overview
 ---
 This project creates and train a deep convolutional neural network to classify traffic signs. It uses the [German Traffic Sign Dataset](http://benchmark.ini.rub.de/?section=gtsrb&subsection=dataset). Additionally the model is tested on images of German traffic signs found on the web and from pictures taken in my neighbourhood.
 
+The deliverables for the project are:
+
+-     [Ipython notebook](./Traffic_Sign_Classifier.ipynb) with code 
+-     [HTML output](./Traffic_Sign_Classifier.html) of the code
+-     [A writeup report](./writeup.md) (markdown)
+
 Check out the [writeup](./writeup.md) for a detailed discussion on steps, challenges and results encountered in this project.
 
 
