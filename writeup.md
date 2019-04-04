@@ -121,7 +121,7 @@ I include more challenging images as they are useful to test the limits of our m
 Here are the results of the prediction:
 ![im](writeup_images/predictions.jpg "j")
 
-As mentioned above, I was very happy to find 100% accuracy in the pictures I took on my neighbourhood and some from the web. However I choose to focus on the more challenging cases for this project. Here the accuracy was 60%.
+As mentioned above, I was very happy to find 100% accuracy in the pictures I took on my neighbourhood and some from the web. However I decided to focus on the more challenging cases for this project. Here the accuracy was 60%.
 
 The main factor for improving this accuracy was the data augmentation process. As mentioned before, data augmentation did not improve the validation accuracy (it was already around 95%). However, without this step, only the"Yield" sign picture I took with my camera was recognized. That difference surprised me, and I decided to explore what effect each of my new dataset had:
 
@@ -137,7 +137,7 @@ Which shows each of the transformations contribute to improve the accuracy, and 
 
 #### 3. Model Certainty - Softmax Probabilities
 
-We can evaluate the softmax probabilities assigned to each class. Looking at the top 5 classes on each picture gives us an insight to how certain the model is of its predictions.
+We can evaluate the softmax probabilities assigned to each class with the function `tf.nn.top_k`, as explained in the Jupyter Notebook . Looking at the top 5 classes on each picture gives us an insight to how certain the model is of its predictions.
 
 ![im](writeup_images/pred_performance_0.jpg "j")
 ![im](writeup_images/pred_performance_1.jpg "j")
@@ -145,15 +145,15 @@ We can evaluate the softmax probabilities assigned to each class. Looking at the
 ![im](writeup_images/pred_performance_3.jpg "j")
 ![im](writeup_images/pred_performance_4.jpg "j")
 
-On the first picture, despite the artistic addition, the correct class is given with 100% probability.
+On the **first picture**, despite the artistic addition, the correct class is given with 100% probability.
 
-The second picture was taken with my camera and, despite what I thought were challenging illumination conditions, it detected the right class with 100% probability.
+The **second picture** was taken with my camera and, despite what I thought were challenging illumination conditions, it detected the right class with 100% probability.
 
-The third picture is interesting because, although to the human eye it is very easy to recognize, the model fails completely. It shows how sometimes what we consider small variations (a little bigger angle in the central line) can counterintuitively confuse the model. 
+The **third picture** is interesting because, although to the human eye it is very easy to recognize, the model fails completely. It shows how sometimes what we consider small variations (a little bigger angle in the central line) can counterintuitively confuse the model. 
 
-The fourth picture is also almost perfectly recognized after the data augmentaion.
+The **fourth picture** is also almost perfectly recognized after the data augmentaion.
 
-The fifth picture fails Interestingly we can see the model considers similar speed limits signs as second, fourth, and fifth options. In another cropping from the original picture where the sign was bigger and better centered the class was recognized by the model. In a real world application my manual cropping would be implemented by a detection algorithm. I decided to show this example to highlight how critical the detection algorithm would be.
+The **fifth picture** fails Interestingly we can see the model considers similar speed limits signs as second, fourth, and fifth options. In another cropping from the original picture where the sign was bigger and better centered the class was recognized by the model. In a real world application my manual cropping would be implemented by a detection algorithm. I decided to show this example to highlight how critical the detection algorithm would be.
 
 #### 4. Further exploration in data augmentation
 
