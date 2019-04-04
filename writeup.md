@@ -153,11 +153,11 @@ The **third picture** is interesting because, although to the human eye it is ve
 
 The **fourth picture** is also almost perfectly recognized after the data augmentation.
 
-The **fifth picture** fails Interestingly we can see the model considers similar speed limits signs as second, fourth, and fifth options. In another cropping from the original picture where the sign was bigger and better centered the class was recognized by the model. In a real world application my manual cropping would be implemented by a detection algorithm. I decided to show this example to highlight how critical the detection algorithm would be.
+The **fifth picture** fails to be correctly classified. Interestingly, the model considers similar speed limits signs as second, fourth, and fifth options. In another cropping from the original picture, where the sign was bigger and better centered, the class was recognized by the model. In a real world application my manual cropping would be implemented by a detection algorithm. I decided to show this example to highlight how critical the detection algorithm would be.
 
 #### 4. Further exploration in data augmentation
 
-As I was fascinated by the effect of data augmentation of randomly selected pictures from the web, I decided to implement two other transformations and further augment my training data: Perpective change and adding white colored rectangles, using again the OpenCV library in the file `data_augmentation2.py`.
+As I was fascinated by the effect of data augmentation on classifying randomly selected pictures from the web, I decided to implement two other transformations and further augment my training data: Perpective change and adding white colored rectangles, using again the OpenCV library in the file `data_augmentation2.py`.
 
 ![im](writeup_images/data_augmentation2.jpg "j")
 
@@ -178,6 +178,6 @@ As suggested in the notebook, the convolution layers can be visualized by the pi
 
 While the second convolution layer losses an easy geometrical interpretation, the first convolution layer visualizations highlight clearly the features of the sign. I chose to plot the only missclasified sign.
 
-The different filters highlight different features of the image, as can be seen below. Some have an easy interpretation. For example, FeatureMap2 highlights the horizontal lines while FeatureMap highlights the vertical lines. FeatureMaps 8 and 12 seem to respond to the diagonal lines that would form the triangle of a warning sign. FeatureMap17 probably activates with the red colour. Unfortunately it is still not fully clear to me, from these maps, why this picture is misclassified as a warning for traffic lights. Some hypotheses can be made, though. For example the combinations of feature maps 26, 27, and 31 may be interpreted as the three colours location of a traffic lights warning sign. A comparison with the feature maps of a real traffic lights warning sign could be very informative to further debug in this direction.
+The different filters highlight different features of the image, as can be seen below. Some have an easy interpretation. For example, FeatureMap2 highlights the horizontal lines while FeatureMap highlights the vertical lines. FeatureMaps 8 and 12 seem to respond to the diagonal lines that would form the triangle of a warning sign. FeatureMap17 probably activates with the red colour. Unfortunately it is still not fully clear to me, from these maps, why this picture is misclassified as a warning for traffic lights. Some hypotheses can be made, though. For example the combinations of feature maps 26, 27, and 31 may be interpreted as the three colours location of a traffic lights warning sign. A comparison with the feature maps of a real traffic lights warning sign could be very informative to further debugging in this direction.
 
 ![im](writeup_images/feature_map.jpg "j")
