@@ -97,7 +97,7 @@ My final model results were:
 * validation set accuracy of **96.8%** 
 * test set accuracy of **95.9%**
 
-<img src="writeup_images/loss_acc_hist.jpg" width="60%" height="60%" />  
+<img src="writeup_images/loss_acc_hist.jpg" width="75%" height="75%" />  
 
 ### Test a Model on New Images
 
