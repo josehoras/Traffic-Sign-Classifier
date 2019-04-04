@@ -82,14 +82,14 @@ The model described above is a modification of the LeNet5 architecture used in t
 
 My first implementation just changed the input dimention to 3 channels and output logits to 43 labels. It did not manage to train at all, although it still worked properly on MNIST. After debbuging I realized that my model would only begin to train after changing the weights declaration from `tf.Varible(...)` to `tf.get_variable(...)`. I suspect the difference lies in the particular initialization of weights with both variables declaration, being one not fitting for the German Sign Dataset, maybe due to colored images.
 
-Afterward the following additions to the model were applied consecutively. Each of them helped to push the final accuracy basic percentage points upwards:
+Afterward the following additions to the model were applied consecutively. Each of them helped to push the final accuracy several basic percentage points upwards:
 
 * Parameter increase on convolution layers (conv1: 6 to 32, conv2: 16 to 64)
 * Parameter increase on fully connected layers (fc1: 400 to 1024, fc2: 84 to 344)
 * Dropout
 * Batch normalization
 
-The bigger parameter numberss for convolutions and fully connected layers lead quickly to overfitting. The training accuracy shot up to 100% while the validation lagged below 90%. The dropout layer significantly reduced the overfitting problem, and was actually relevant with high number of parameters.
+The bigger parameter numbers for convolutions and fully connected layers lead quickly to overfitting. The training accuracy shot up to 100% while the validation lagged below 90%. The dropout layer significantly reduced the overfitting problem, and was actually only relevant with high number of parameters.
 
 My final model results were:
 
@@ -107,10 +107,10 @@ I researched German traffic signs images on the web. I also took some pictures o
 
 The pictures I took, as well as some found on the web were classiffied correctly and, once the model was trained with over 93% accuracy, represented no challenge. 
 
-I include more challenging images as they are useful to test the limits of our model, such as:
+I include more challenging images as they are useful to test the limits of the model, such as:
 
 - A defaced "Stop" sign
-- A "Dangerous curve to the left" that is probably not a German sign (German signs on the dataset show a curve with smaller angle). Also it is relevant to remember that its class is one with the lower frequency in our training data histogram shown above. Thus the issue may be also related to lack of training examples.
+- A "Dangerous curve to the left" that is probably not a German sign (German signs on the dataset show a curve with an almost right angle). Also it is relevant to remember that its class is one with the lower frequency in our training data histogram shown above. Thus the issue may be also related to lack of training examples.
 - Incorrect cropping. Some signs were inside broader pictures, and I manually cropped the sign. If this cropping is not well focused on the sign, classification is difficult.
 - [Edinburgh's road signs hacked by artist](https://www.bbc.com/news/uk-scotland-edinburgh-east-fife-46139025)
 
@@ -123,7 +123,7 @@ Here are the results of the prediction:
 
 As mentioned above, I was very happy to find 100% accuracy in the pictures I took on my neighbourhood and some from the web. However I decided to focus on the more challenging cases for this project. Here the accuracy was 60%.
 
-The main factor for improving this accuracy was the data augmentation process. As mentioned before, data augmentation did not improve the validation accuracy (it was already around 95%). However, without this step, only the"Yield" sign picture I took with my camera was recognized. That difference surprised me, and I decided to explore what effect each of my new dataset had:
+The main factor for improving this accuracy was the data augmentation process. As mentioned before, data augmentation did not improve the validation accuracy (it was already around 95%). However, without this step, only the"Yield" sign picture I took with my camera was recognized. That difference surprised me, and I decided to explore what effect each of my new datasets had:
 
 | Data augmentation				|  Accuracy	| 
 |:------------------------------------------:|:-----------------:| 
