@@ -80,7 +80,7 @@ I found a batch size of 256 provided good training and was still not much time c
 
 The model described above is a modification of the LeNet5 architecture used in the classroom at the end of the CNN lesson. The convolution layers in this architecture are well adapted for image classification (it was developed for digits recognition on the MNIST database) and is thus a good starting point for traffic sign calssification.
 
-My first implementation just changed the input dimention to 3 channels and output logits to 43 labels. It did not manage to train at all, although it still worked properly on MNIST. After debbuging I realized that my model would only begin to train after changing the weights declaration from `tf.Varible(...)` to `tf.get_variable(...)`. The difference should reside in the normal initialization of weights, that would not be appropriate on the German Sign Dataset, with color images. However, I don't fully understand why that is so, as this investigation proved much time consuming.
+My first implementation just changed the input dimention to 3 channels and output logits to 43 labels. It did not manage to train at all, although it still worked properly on MNIST. After debbuging I realized that my model would only begin to train after changing the weights declaration from `tf.Varible(...)` to `tf.get_variable(...)`. I suspect the difference lies in the particular initialization of weights with both variables declaration, being one not fitting for the German Sign Dataset, maybe due to colored images.
 
 Afterward the following additions to the model were applied consecutively. Each of them helped to push the final accuracy basic percentage points upwards:
 
