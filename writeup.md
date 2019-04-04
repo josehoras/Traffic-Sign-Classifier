@@ -151,7 +151,7 @@ The **second picture** was taken with my camera and, despite what I thought were
 
 The **third picture** is interesting because, although to the human eye it is very easy to recognize, the model fails completely. It shows how sometimes what we consider small variations (a little bigger angle in the central line) can counterintuitively confuse the model. 
 
-The **fourth picture** is also almost perfectly recognized after the data augmentaion.
+The **fourth picture** is also almost perfectly recognized after the data augmentation.
 
 The **fifth picture** fails Interestingly we can see the model considers similar speed limits signs as second, fourth, and fifth options. In another cropping from the original picture where the sign was bigger and better centered the class was recognized by the model. In a real world application my manual cropping would be implemented by a detection algorithm. I decided to show this example to highlight how critical the detection algorithm would be.
 
