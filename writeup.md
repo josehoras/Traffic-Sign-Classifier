@@ -42,7 +42,7 @@ I conclude that training and validation sets had some common properties, maybe c
 
 ### Design and Test a Model Architecture
 #### 1. Preprocessing
-I decided against converting to grayscale, because a first check did not show an improve accuray. That makes sense to me, because as humans we rely on the info color gives us to recognize traffic signs. They are actually designed with simple color schemes to ease recognition. Thus I would think the color information is also useful to the neural net.
+I decided against converting to grayscale, because a first check did not show an improve accuracy. That makes sense to me, because as humans we rely on the info color gives us to recognize traffic signs. They are actually designed with simple color schemes to ease recognition. Thus I would think the color information is also useful to the neural net.
 
 My preprocessing step is limited to zero centering and normalization.
 
@@ -93,9 +93,9 @@ The bigger parameter numberss for convolutions and fully connected layers lead q
 
 My final model results were:
 
-* training set accuracy of ?
-* validation set accuracy of ? 
-* test set accuracy of ?
+* training set accuracy of **100%**
+* validation set accuracy of **96.8%** 
+* test set accuracy of **95.9%**
 
 <img src="writeup_images/loss_acc_hist.jpg" width="50%" height="50%" />  
 
