@@ -4,13 +4,6 @@ import matplotlib.pyplot as plt
 import csv
 import cv2
 
-training_file = "train.p"
-
-with open(training_file, mode='rb') as f:
-    train = pickle.load(f)
-
-X_train_raw, y_train = train['features'], train['labels']
-
 
 # Define transformations
 def translate(im, translation, w, h):
@@ -29,56 +22,65 @@ def rotate(im, angle, w, h):
     return im
 
 
-def add_rect(image, w, h):
+def add_rect(im, w, h):
     min_hl = 3
     max_hl = 8
     x1 = int((w - max_hl) * np.random.uniform(0, 1))
     y1 = int((h - max_hl) * np.random.uniform(0, 1))
     x2 = x1 + int(np.random.uniform(min_hl, max_hl))
     y2 = y1 + int(np.random.uniform(min_hl, max_hl))
-    cv2.rectangle(image, (x1,y1), (x2,y2), (0,0,0), -1)
-    return image
+    cv2.rectangle(im, (x1,y1), (x2,y2), (0,0,0), -1)
+    return im
+
+
+training_file = "train.p"
+with open(training_file, mode='rb') as f:
+    train = pickle.load(f)
+X_train, y_train = train['features'], train['labels']
 
 # Open csv and place signnames in dictionary
 reader = csv.reader(open('signnames.csv', mode='r'))
 signs_dict = dict((rows[0], rows[1]) for rows in reader)
 
-
-translation = 0.2
-angle = 25
-# n = 19000
-# raw_image = X_train_raw[n]
-# h, w, channels = raw_image.shape
-# image = np.copy(X_train_raw[n])
-# image = add_rect(image, w, h)
+translation = 0
+angle = 20
 
 width, height = 32, 32
-new_X = np.copy(X_train_raw)
-print(X_train_raw.shape)
-print(new_X.shape)
-for i in range(X_train_raw.shape[0]):
-    raw_image = X_train_raw[i]
-    image = np.copy(X_train_raw[i])
-    # image = add_rect(image, width, height)
-    image = rotate(image, angle, width, height)
-    # image = translate(image, translation, width, height)
-    new_X[i] = image
+X_trans = np.copy(X_train)
+X_rot = np.copy(X_train)
+X_rect = np.copy(X_train)
+for i in range(X_train.shape[0]):
+    raw_image = X_train[i]
+    # Translation
+    image_trans = np.copy(X_train[i])
+    X_trans[i] = translate(image_trans, translation, width, height)
+    # Rotation
+    image_rot = np.copy(X_train[i])
+    X_rot[i] = rotate(image_rot, angle, width, height)
+    # Add rectangles
+    image_rect = np.copy(X_train[i])
+    X_rect[i] = add_rect(image_rect, width, height)
 
-n = 34790
-raw_image = X_train_raw[n]
-image = new_X[n]
-# Visualizations will be shown in the notebook.
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(8,8))
-ax1.imshow(raw_image)
-ax1.axis('off')
-ax1.set_title(signs_dict[str(y_train[n])])
-ax2.imshow(image)
-ax2.axis('off')
-ax2.set_title('translation')
-plt.show()
 
 # Create dict of new data, and write it to disk via pickle file
-new_file = "train_rot.p"
-new_data = {'features': new_X, 'labels': y_train}
-with open(new_file, mode='wb') as f:
-    pickle.dump(new_data, f)
+for new_file, new_X in zip(("train_trans.p", "train_rot.p", "train_rect.p"),
+                           (X_trans, X_rot, X_rect)):
+    print(new_file)
+    with open(new_file, mode='wb') as f:
+        pickle.dump({'features': new_X, 'labels': y_train}, f)
+
+n = 3580
+raw_image = X_train[n]
+image_trans = X_trans[n]
+image_rot = X_rot[n]
+image_rect = X_rect[n]
+# Visualizations will be shown in the notebook.
+f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(10,3))
+for ax, image, title in zip((ax1, ax2, ax3, ax4),
+                            (raw_image, image_trans, image_rot, image_rect),
+                            (signs_dict[str(y_train[n])], 'Translation', 'Rotation', 'Add rectangle')):
+    ax.axis('off')
+    ax.imshow(image)
+    ax.set_title(title)
+plt.show()
+# f.savefig("writeup_images/data_augmentation.jpg")

@@ -28,8 +28,7 @@ X_test, y_test = test['features'], test['labels']
 
 
 # Add augmented training data
-def add_data(new_data_file, X_train_old, y_train_old):
-    training_new = new_data_file
+def add_data(training_new, X_train_old, y_train_old):
     with open(training_new, mode='rb') as f:
         train_new = pickle.load(f)
     X_train_new, y_train_new = train_new['features'], train_new['labels']
@@ -37,8 +36,8 @@ def add_data(new_data_file, X_train_old, y_train_old):
     y_train_old = np.append(y_train_old, y_train_new, axis=0)
     return X_train_old, y_train_old
 
-
-for filename in ("train_trans.p", "train_rot.p", "train_rect.p"):
+# ["train_trans.p", "train_rot.p", "train_rect.p", "train_persp.p"]
+for filename in ["train_trans.p", "train_rot.p", "train_rect.p"]:
     X_train, y_train = add_data(filename, X_train, y_train)
 
 ### Step 1: Dataset Summary & Exploration
@@ -66,21 +65,32 @@ print("Number of classes =", n_classes)
 # Open csv and place signnames in dictionary
 reader = csv.reader(open('signnames.csv', mode='r'))
 signs_dict = dict((rows[0], rows[1]) for rows in reader)
-from textwrap import wrap
+
 # Visualizations
-n = 40 # number of classes to display
-rows = 8
-cols = 5
-plt.figure(1, figsize=(cols*2, rows*2))
-for i in range(n):
-    plt.subplot(rows, cols, i + 1)  # sets the number of feature maps to show on each row and column
-    plt.title(str(i) + ": " + signs_dict[str(i)], fontsize=12)
-    plt.axis('off')
-    idx = np.where(y_train == i)[0][50]
-    plt.imshow(X_train[idx])
-# plt.subplots_adjust(wspace=0.1, hspace=0)
-plt.tight_layout()
-plt.show()
+# n = 20      # number of classes to display
+# rows = 4
+# cols = 5
+# f = plt.figure(1, figsize=(cols*2.25, rows*2.25))
+# for i in range(n):
+#     plt.subplot(rows, cols, i + 1)  # sets the number of feature maps to show on each row and column
+#     j = i * 1
+#     plt.title(str(j) + ": " + signs_dict[str(j)], fontsize=10)
+#     plt.axis('off')
+#     idx = np.where(y_train == j)[0][80]
+#     plt.imshow(X_train[idx])
+# # plt.subplots_adjust(wspace=0.1, hspace=0)
+# plt.tight_layout()
+# plt.show()
+# f.savefig("writeup_images/expl_visualization.jpg")
+
+# Count frequency of each label
+# labels, counts = np.unique(y_train, return_counts=True)
+# # Plot the histogram
+# f = plt.figure(1, figsize=(12, 5))
+# plt.bar(labels, counts, tick_label=labels, width=0.8, align='center')
+# plt.title('Class Histogram on the Training Set')
+# plt.show()
+# f.savefig("writeup_images/train_data_histogram.jpg")
 
 ### Step 2: Design and Test a Model Architecture
 # center and normalize
@@ -181,14 +191,14 @@ def evaluate(X_data, y_data):
 EPOCHS = 10
 BATCH_SIZE = 256
 rate = 1e-3
-rate_decay = 0.96
+rate_decay = 0.9
 
 iterations = 0
 loss_series = []
 train_acc_series = []
 val_acc_series = []
 acc_x = []
-training = False
+training = True
 if training:
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -236,6 +246,13 @@ if training:
     ax2.legend(loc='lower right')
     ax2.set_title("Accuracy")
     plt.show()
+    f.savefig("writeup_images/loss_acc_hist.jpg")
+
+# Test data accuracy
+with tf.Session() as sess:
+    saver.restore(sess, './traffic_model')
+    test_accuracy = evaluate(X_test_norm, y_test)
+print("Test Accuracy = {:.3f}".format(test_accuracy))
 
 image_files = [image_file for image_file in os.listdir('example_signs')]
 images = []
@@ -258,24 +275,23 @@ with tf.Session() as sess:
     predictions = sess.run(prediction, feed_dict={x: my_images_pre, keep_prob: 1})
     best_logits = sess.run(tf.nn.top_k(tf.nn.softmax(logits), k=5), feed_dict={x: my_images_pre, keep_prob: 1})
 # Plot predictions on validation set after training
-f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3, 3, figsize=(10, 6))
-for i, ax in enumerate((ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9)):
-    ax.imshow(my_images[i])
+# f, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(3, 3, figsize=(10, 6))
+f, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(10, 6))
+for i, ax in enumerate((ax1, ax2, ax3, ax4, ax5, ax6)):
     ax.axis('off')
-    ax.set_title(str(predictions[i]) + ": " + signs_dict[str(predictions[i])])
+    if i < my_images.shape[0]:
+        ax.imshow(my_images[i])
+        ax.set_title(str(predictions[i]) + ": " + signs_dict[str(predictions[i])])
 plt.show()
+f.savefig("writeup_images/predictions.jpg")
 
-print("pred: ", predictions)
-print("labels: ", my_labels)
 num_correct = np.sum(predictions == my_labels)
-print("num_correct: ", num_correct)
 my_acc = int(num_correct * 100 / predictions.shape[0])
 print("Accuracy: {}%".format(my_acc))
 
-
 ### Print out the top five softmax probabilities for the predictions on the German traffic sign images found on the web.
-for i in range(9):
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(8, 2))
+for i in range(5):
+    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(10, 2))
     for ax in (ax1, ax2, ax3):
         ax.axis('off')
     ax1.imshow(my_images[i])
@@ -285,8 +301,9 @@ for i in range(9):
         prob = "%.1f" % (best_logits[0][i][j] * 100)
         txt = txt + logit + ": " + signs_dict[logit] + ' (' + prob + '%)'
         if j < 4: txt = txt + '\n'
-    f.text(0.35, 0.87, txt, fontsize=16, va='top', bbox={'facecolor':'None'})
+    f.text(0.35, 0.85, txt, fontsize=14, va='top', bbox={'facecolor': 'None'})
     plt.show()
+    f.savefig("writeup_images/pred_performance_" + str(i) + ".jpg")
 
 ### Visualize your network's feature maps here.
 ### Feel free to use as many code cells as needed.
