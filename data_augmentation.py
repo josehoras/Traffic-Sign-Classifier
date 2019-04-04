@@ -42,8 +42,8 @@ X_train, y_train = train['features'], train['labels']
 reader = csv.reader(open('signnames.csv', mode='r'))
 signs_dict = dict((rows[0], rows[1]) for rows in reader)
 
-translation = 0
-angle = 20
+translation = 0.1
+angle = 15
 
 width, height = 32, 32
 X_trans = np.copy(X_train)

@@ -67,9 +67,9 @@ reader = csv.reader(open('signnames.csv', mode='r'))
 signs_dict = dict((rows[0], rows[1]) for rows in reader)
 
 # Visualizations
-# n = 20      # number of classes to display
-# rows = 4
-# cols = 5
+# n = 6      # number of classes to display
+# rows = 2
+# cols = 3
 # f = plt.figure(1, figsize=(cols*2.25, rows*2.25))
 # for i in range(n):
 #     plt.subplot(rows, cols, i + 1)  # sets the number of feature maps to show on each row and column
