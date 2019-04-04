@@ -98,7 +98,9 @@ My final model results were:
 * test set accuracy of ?
 
 <img src="writeup_images/loss_acc_hist.jpg" width="50%" height="50%" />  
+
 ### Test a Model on New Images
+
 #### 1. Acquiring New Images
 
 I researched German traffic signs images on the web. I also took some pictures of traffic signs in my neighbourhood which, living in Germany myself, were well fitting for this project.
