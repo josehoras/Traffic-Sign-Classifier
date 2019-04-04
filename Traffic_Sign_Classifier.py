@@ -198,20 +198,21 @@ loss_series = []
 train_acc_series = []
 val_acc_series = []
 acc_x = []
-training = True
+training = True     # easy bypass to avoid training when I don't need it and save time while debugging
 if training:
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         num_examples = len(X_train)
         print("Training...")
         print()
+        # Check accuracy for epoch 0
         batch_x, batch_y = X_train_norm[0:BATCH_SIZE], y_train[0:BATCH_SIZE]
         train_accuracy = evaluate(batch_x, batch_y)
         train_acc_series.append(train_accuracy)
         validation_accuracy = evaluate(X_valid, y_valid)
         val_acc_series.append(validation_accuracy)
         acc_x.append(iterations)
-
+        # Main loop for each epoch
         for i in range(EPOCHS):
             X_train_norm, y_train = shuffle(X_train_norm, y_train)
             for offset in range(0, num_examples, BATCH_SIZE):
@@ -221,7 +222,7 @@ if training:
                                    feed_dict={x: batch_x, y: batch_y, keep_prob: 0.5, lr: rate})
                 loss_series.append(loss)
                 iterations += 1
-
+            # Check accuracy after each epoch
             train_accuracy = evaluate(X_train_norm, y_train)
             train_acc_series.append(train_accuracy)
             validation_accuracy = evaluate(X_valid_norm, y_valid)
