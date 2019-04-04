@@ -7,9 +7,9 @@ This project creates and train a deep convolutional neural network to classify t
 
 The deliverables for the project are:
 
--     [Ipython notebook](./Traffic_Sign_Classifier.ipynb) with code 
--     [HTML output](./Traffic_Sign_Classifier.html) of the code
--     [A writeup report](./writeup.md) (markdown)
+- [Ipython notebook](./Traffic_Sign_Classifier.ipynb) with code 
+- [HTML output](./Traffic_Sign_Classifier.html) of the code
+- [A writeup report](./writeup.md) (markdown)
 
 Check out the [writeup](./writeup.md) for a detailed discussion on steps, challenges and results encountered in this project.
 
